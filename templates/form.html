@@ -1,0 +1,41 @@
+<!-- templates/form.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Churn Prediction</title>
+</head>
+<body>
+    <h2>Churn Prediction Form</h2>
+    <form action="/predict" method="post">
+        <label for="customer_id">Customer ID:</label>
+        <input type="text" name="customer_id" required><br><br>
+
+        <label for="contract_type">Contract Type:</label>
+        <select name="contract_type">
+            <option value="Month-to-month">Month-to-month</option>
+            <option value="One year">One year</option>
+            <option value="Two year">Two year</option>
+        </select><br><br>
+
+        <label for="age">Age:</label>
+        <input type="number" name="age" required><br><br>
+
+        <label for="monthly_charges">Monthly Charges:</label>
+        <input type="number" name="monthly_charges" step="0.01" required><br><br>
+
+        <label for="has_internet">Has Internet (0 or 1):</label>
+        <input type="number" name="has_internet" min="0" max="1" required><br><br>
+
+        <label for="tenure_months">Tenure in Months:</label>
+        <input type="number" name="tenure_months" required><br><br>
+
+        <button type="submit">Predict</button>
+    </form>
+
+{% if result %}
+    <h3>Prediction: {{ result.prediction }}</h3>
+    <h4>Probability: {{ result.probability }}</h4>
+{% endif %}
+
+</body>
+</html>
