@@ -4,14 +4,16 @@ pipeline {
 
     environment {
         AWS_REGION = 'us-east-1'
-        IMAGE_NAME = 'churn-api'
+        // IMAGE_NAME = 'churn-api'
         ECR_REPO = "<your_account_id>.dkr.ecr.${AWS_REGION}.amazonaws.com/${IMAGE_NAME}"
+        IMAGE_NAME = 'pratish7991/churn-api'  // Replace with your actual Docker Hub repo
+        DOCKERHUB_CREDENTIALS_ID = 'dockerhub-creds'  // Jenkins credential ID
     }
 
     stages {
         stage('Clone Repo') {
             steps {
-                git branch: 'main', url: 'https://github.com/<your-repo>.git'
+                git branch: 'main', url: 'https://github.com/pratish7991/mlopsproject.git'
             }
         }
 
@@ -33,32 +35,43 @@ pipeline {
             }
         }
 
-        stage('Push to ECR') {
+        stage('Push to Docker Hub') {
             steps {
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'aws-creds'
-                ]]) {
+                withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                     sh '''
-                        aws --version
-                        aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO
-                        docker tag $IMAGE_NAME:latest $ECR_REPO:latest
-                        docker push $ECR_REPO:latest
+                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+                        docker push $IMAGE_NAME:latest
                     '''
                 }
             }
         }
 
-        stage('Deploy to ECS') {
-            steps {
-                sh '''
-                    aws ecs update-service \
-                      --cluster mlops-cluster \
-                      --service churn-service \
-                      --force-new-deployment \
-                      --region $AWS_REGION
-                '''
-            }
-        }
+        // stage('Push to ECR') {
+        //     steps {
+        //         withCredentials([[
+        //             $class: 'AmazonWebServicesCredentialsBinding',
+        //             credentialsId: 'aws-creds'
+        //         ]]) {
+        //             sh '''
+        //                 aws --version
+        //                 aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO
+        //                 docker tag $IMAGE_NAME:latest $ECR_REPO:latest
+        //                 docker push $ECR_REPO:latest
+        //             '''
+        //         }
+        //     }
+        // }
+
+        // stage('Deploy to ECS') {
+        //     steps {
+        //         sh '''
+        //             aws ecs update-service \
+        //               --cluster mlops-cluster \
+        //               --service churn-service \
+        //               --force-new-deployment \
+        //               --region $AWS_REGION
+        //         '''
+        //     }
+        // }
     }
 }
