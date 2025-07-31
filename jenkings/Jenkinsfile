@@ -19,62 +19,34 @@ pipeline {
                 }
             }
         }
-
-        stage('Install Dependencies') {
-            steps {
-                sh 'pip install -r requirements.txt'
-            }
+        
+    stage('Install Dependencies') {
+        steps {
+            bat 'pip install -r requirements.txt'
         }
-
-        stage('Run Tests') {
-            steps {
-                sh 'pytest tests/'
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                sh 'docker build -t $IMAGE_NAME:latest .'
-            }
-        }
-
-        stage('Push to Docker Hub') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                    sh '''
-                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-                        docker push $IMAGE_NAME:latest
-                    '''
-                }
-            }
-        }
-
-        // stage('Push to ECR') {
-        //     steps {
-        //         withCredentials([[
-        //             $class: 'AmazonWebServicesCredentialsBinding',
-        //             credentialsId: 'aws-creds'
-        //         ]]) {
-        //             sh '''
-        //                 aws --version
-        //                 aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO
-        //                 docker tag $IMAGE_NAME:latest $ECR_REPO:latest
-        //                 docker push $ECR_REPO:latest
-        //             '''
-        //         }
-        //     }
-        // }
-
-        // stage('Deploy to ECS') {
-        //     steps {
-        //         sh '''
-        //             aws ecs update-service \
-        //               --cluster mlops-cluster \
-        //               --service churn-service \
-        //               --force-new-deployment \
-        //               --region $AWS_REGION
-        //         '''
-        //     }
-        // }
     }
+
+    stage('Run Tests') {
+        steps {
+            bat 'pytest tests/'
+        }
+    }
+
+    stage('Build Docker Image') {
+        steps {
+            bat 'docker build -t %IMAGE_NAME%:latest .'
+        }
+    }
+
+    stage('Push to Docker Hub') {
+        steps {
+            withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                bat '''
+                    echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
+                    docker push %IMAGE_NAME%:latest
+                '''
+            }
+        }
+    }
+
 }
