@@ -13,7 +13,7 @@ pipeline {
     stages {
         stage('Clone Repo') {
             steps {
-                scripts{
+                script {
                     echo 'Cloning Guthub repo to Jenkins.......'
                     checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'github-creds', url: 'https://github.com/pratish7991/mlopsproject.git']])
                 }
