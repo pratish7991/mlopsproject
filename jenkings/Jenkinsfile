@@ -20,34 +20,42 @@ pipeline {
             }
         }
 
-    stage('Install Dependencies') {
-        steps {
-            bat 'pip install -r requirements.txt'
-        }
-    }
-
-    stage('Run Tests') {
-        steps {
-            bat 'pytest tests/'
-        }
-    }
-
-    stage('Build Docker Image') {
-        steps {
-            bat 'docker build -t %IMAGE_NAME%:latest .'
-        }
-    }
-
-    stage('Push to Docker Hub') {
-        steps {
-            withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+        stage('Set up Python Venv and Install Requirements') {
+            steps {
                 bat '''
-                    echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
-                    docker push %IMAGE_NAME%:latest
+                    python -m venv venv
+                    call venv\\Scripts\\activate
+                    python -m pip install --upgrade pip
+                    pip install -r requirements.txt
                 '''
             }
         }
-    }
+
+        stage('Run Tests') {
+            steps {
+                bat '''
+                    call venv\\Scripts\\activate
+                    pytest tests
+                '''
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                bat 'docker build -t %IMAGE_NAME% .'
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+                    bat '''
+                        echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
+                        docker push %IMAGE_NAME%
+                    '''
+                }
+            }
+        }
 
     }
 }
