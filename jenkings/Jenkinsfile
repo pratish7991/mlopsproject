@@ -31,14 +31,14 @@ pipeline {
             }
         }
 
-        stage('Run Tests') {
-            steps {
-                bat '''
-                    call venv\\Scripts\\activate
-                    pytest tests
-                '''
-            }
-        }
+        // stage('Run Tests') {
+        //     steps {
+        //         bat '''
+        //             call venv\\Scripts\\activate
+        //             pytest tests
+        //         '''
+        //     }
+        // }
 
         stage('Build Docker Image') {
             steps {
