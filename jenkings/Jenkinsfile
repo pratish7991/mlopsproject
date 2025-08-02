@@ -6,7 +6,7 @@ pipeline {
         AWS_REGION = 'us-east-1'
         // IMAGE_NAME = 'churn-api'
         ECR_REPO = "<your_account_id>.dkr.ecr.${AWS_REGION}.amazonaws.com/${IMAGE_NAME}"
-        IMAGE_NAME = 'pratish7991/churn-api'  // Replace with your actual Docker Hub repo
+        IMAGE_NAME = 'pratish0078/churn-api'  // Replace with your actual Docker Hub repo
         DOCKERHUB_CREDENTIALS_ID = 'dockerhub-creds'  // Jenkins credential ID
     }
 
@@ -50,7 +50,7 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                     bat '''
-                        echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin
+                        docker login -u %DOCKER_USERNAME% -p %DOCKER_PASSWORD%
                         docker push %IMAGE_NAME%
                     '''
                 }
