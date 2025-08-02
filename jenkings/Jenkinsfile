@@ -1,4 +1,3 @@
-
 pipeline {
     agent any
 
@@ -6,7 +5,7 @@ pipeline {
         AWS_REGION = 'us-east-1'
         IMAGE_NAME = 'churn-api'
         DOCKERHUB_IMAGE = 'pratish0078/churn-api'
-        ECR_REPO = "<your_account_id>.dkr.ecr.${AWS_REGION}.amazonaws.com/${IMAGE_NAME}"
+        ECR_REPO = "441332670522.dkr.ecr.${AWS_REGION}.amazonaws.com/${IMAGE_NAME}"
         DOCKERHUB_CREDENTIALS_ID = 'dockerhub-creds'
     }
 
@@ -14,8 +13,15 @@ pipeline {
         stage('Clone Repo') {
             steps {
                 script {
-                    echo 'Cloning Guthub repo to Jenkins.......'
-                    checkout scmGit(branches: [[name: '*/main']], extensions: [], userRemoteConfigs: [[credentialsId: 'github-creds', url: 'https://github.com/pratish7991/mlopsproject.git']])
+                    echo 'Cloning GitHub repo to Jenkins...'
+                    checkout scmGit(
+                        branches: [[name: '*/main']],
+                        extensions: [],
+                        userRemoteConfigs: [[
+                            credentialsId: 'github-creds',
+                            url: 'https://github.com/pratish7991/mlopsproject.git'
+                        ]]
+                    )
                 }
             }
         }
@@ -31,24 +37,33 @@ pipeline {
             }
         }
 
-
         stage('Build Docker Image') {
             steps {
                 bat 'docker build -t %IMAGE_NAME% .'
             }
         }
 
-        // stage('Push Docker Image') {
-        //     steps {
-        //         withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-        //             bat '''
-        //                 docker login -u %DOCKER_USERNAME% -p %DOCKER_PASSWORD%
-        //                 docker push %IMAGE_NAME%
-        //             '''
-        //         }
-        //     }
-        // }
+        stage('Push to DockerHub') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: "${DOCKERHUB_CREDENTIALS_ID}",
+                    usernameVariable: 'DOCKER_USERNAME',
+                    passwordVariable: 'DOCKER_PASSWORD'
+                )]) {
+                    bat '''
+                        docker tag %IMAGE_NAME% %DOCKERHUB_IMAGE%
+                        docker login -u %DOCKER_USERNAME% -p %DOCKER_PASSWORD%
+                        docker push %DOCKERHUB_IMAGE%
+                    '''
+                }
+            }
+        }
 
+        stage('Tag Docker Image for ECR') {
+            steps {
+                bat 'docker tag %IMAGE_NAME% %ECR_REPO%:latest'
+            }
+        }
 
         stage('Push to AWS ECR') {
             steps {
@@ -56,13 +71,13 @@ pipeline {
                     $class: 'AmazonWebServicesCredentialsBinding',
                     credentialsId: 'aws-creds'
                 ]]) {
-                    bat """
+                    bat '''
                         aws --version
                         aws ecr get-login-password --region %AWS_REGION% | docker login --username AWS --password-stdin %ECR_REPO%
                         docker push %ECR_REPO%:latest
-                    """
+                    '''
                 }
             }
-
+        }
     }
 }
