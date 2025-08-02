@@ -4,10 +4,10 @@ pipeline {
 
     environment {
         AWS_REGION = 'us-east-1'
-        // IMAGE_NAME = 'churn-api'
+        IMAGE_NAME = 'churn-api'
+        DOCKERHUB_IMAGE = 'pratish0078/churn-api'
         ECR_REPO = "<your_account_id>.dkr.ecr.${AWS_REGION}.amazonaws.com/${IMAGE_NAME}"
-        IMAGE_NAME = 'pratish0078/churn-api'  // Replace with your actual Docker Hub repo
-        DOCKERHUB_CREDENTIALS_ID = 'dockerhub-creds'  // Jenkins credential ID
+        DOCKERHUB_CREDENTIALS_ID = 'dockerhub-creds'
     }
 
     stages {
@@ -31,14 +31,6 @@ pipeline {
             }
         }
 
-        // stage('Run Tests') {
-        //     steps {
-        //         bat '''
-        //             call venv\\Scripts\\activate
-        //             pytest tests
-        //         '''
-        //     }
-        // }
 
         stage('Build Docker Image') {
             steps {
@@ -46,16 +38,31 @@ pipeline {
             }
         }
 
-        stage('Push Docker Image') {
+        // stage('Push Docker Image') {
+        //     steps {
+        //         withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
+        //             bat '''
+        //                 docker login -u %DOCKER_USERNAME% -p %DOCKER_PASSWORD%
+        //                 docker push %IMAGE_NAME%
+        //             '''
+        //         }
+        //     }
+        // }
+
+
+        stage('Push to AWS ECR') {
             steps {
-                withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
-                    bat '''
-                        docker login -u %DOCKER_USERNAME% -p %DOCKER_PASSWORD%
-                        docker push %IMAGE_NAME%
-                    '''
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-creds'
+                ]]) {
+                    bat """
+                        aws --version
+                        aws ecr get-login-password --region %AWS_REGION% | docker login --username AWS --password-stdin %ECR_REPO%
+                        docker push %ECR_REPO%:latest
+                    """
                 }
             }
-        }
 
     }
 }
